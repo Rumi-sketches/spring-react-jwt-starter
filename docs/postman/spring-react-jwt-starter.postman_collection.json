@@ -1,0 +1,287 @@
+{
+  "info": {
+    "name": "spring-react-jwt-starter",
+    "description": "JWT Authentication API — Spring Boot + React\n\nFlow:\n1. Run 'Login' → access token is saved automatically\n2. Run 'Get current user' → uses the saved token\n3. Run 'Refresh Token' → rotates the token pair\n4. Run 'Logout' → revokes the session\n\nThe refresh_token cookie is handled automatically by Postman.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1",
+      "description": "Change to your production URL when deploying"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "description": "Populated automatically after login"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Public endpoints — no token required",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Automatically save the access token after a successful login.",
+                  "// Subsequent requests use {{accessToken}} and will work immediately.",
+                  "const res = pm.response.json();",
+                  "if (res.accessToken) {",
+                  "    pm.collectionVariables.set('accessToken', res.accessToken);",
+                  "    console.log('✓ Access token saved');",
+                  "}",
+                  "",
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response has accessToken', () => pm.expect(res.accessToken).to.be.a('string'));",
+                  "pm.test('Response has tokenType Bearer', () => pm.expect(res.tokenType).to.equal('Bearer'));",
+                  "pm.test('Set-Cookie contains refresh_token', () => {",
+                  "    pm.expect(pm.response.headers.get('Set-Cookie')).to.include('refresh_token');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@demo.com\",\n  \"password\": \"password\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Authenticates the user and returns an access token (JWT, 15 min) in the body and a refresh token (httpOnly cookie, 7 days).\n\nThe test script saves the access token automatically — no manual copy-paste needed."
+          }
+        },
+        {
+          "name": "Login as USER",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.accessToken) {",
+                  "    pm.collectionVariables.set('accessToken', res.accessToken);",
+                  "    console.log('✓ Access token saved (USER role)');",
+                  "}",
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@demo.com\",\n  \"password\": \"password\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login with a USER role account. Use 'Get current user' after this to compare the response with the ADMIN login."
+          }
+        },
+        {
+          "name": "Login — invalid credentials",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Response has error field', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.error).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@demo.com\",\n  \"password\": \"wrongpassword\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Demonstrates the 401 response for invalid credentials."
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// The refresh token cookie is sent automatically by Postman.",
+                  "// If successful, the old refresh token is revoked and a new pair is issued.",
+                  "const res = pm.response.json();",
+                  "if (res.accessToken) {",
+                  "    pm.collectionVariables.set('accessToken', res.accessToken);",
+                  "    console.log('✓ Token rotated — new access token saved');",
+                  "}",
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('New access token returned', () => pm.expect(res.accessToken).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            },
+            "description": "Exchanges the refresh token cookie for a new access token + new refresh token (rotation).\n\nNo body or Authorization header required — the cookie is sent automatically.\n\nIf the refresh token has already been used (reuse detection), all sessions for that user are revoked."
+          }
+        },
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('accessToken', '');",
+                  "console.log('✓ Logged out — token cleared');",
+                  "pm.test('Status is 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Revokes the current refresh token in the database and clears the cookie.\n\nThe access token is not invalidated server-side (stateless JWT) — it will expire naturally after 15 minutes."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "Protected endpoints — valid access token required",
+      "item": [
+        {
+          "name": "Get current user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response has email', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.email).to.be.a('string');",
+                  "    pm.expect(res.role).to.be.oneOf(['ADMIN', 'USER']);",
+                  "    console.log(`✓ Logged in as ${res.email} (${res.role})`);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me"]
+            },
+            "description": "Returns the current user's email and role, extracted from the JWT.\n\nThe access token is read from the {{accessToken}} collection variable set during login."
+          }
+        },
+        {
+          "name": "Get current user — no token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me"]
+            },
+            "description": "Demonstrates the 401 response when no token is provided."
+          }
+        }
+      ]
+    }
+  ]
+}
