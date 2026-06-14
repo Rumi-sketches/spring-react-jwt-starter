@@ -2,7 +2,7 @@
 
 Hi, I'm Rumi, a mid-level developer who works mostly with Java and Spring Boot. I've been wanting to start building my own projects and rewriting some of the mockups and prototypes I've come across at work, as a hobby but also to keep my brain sharp.
 
-JWT authentication is something I keep seeing and working on but never actually built from scratch. With the help of *AI* (which I believe is a viable and very useful tool for learning and building, if not used to delegate the writing of code you don't understand), I put together this implementation and I'm sharing it for anyone who wants to understand how it works, not just prompt it out.
+JWT authentication is something I keep seeing and working on but never actually built from scratch. With the help of *AI* (which I believe is a viable and very useful tool for learning and building, if not used to delegate the writing of code you don't understand), I put together this implementation for anyone who wants to understand how it actually works (or use it in personal projects), instead of just prompting it out.
 
 ---
 
